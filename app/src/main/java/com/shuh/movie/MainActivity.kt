@@ -1,6 +1,7 @@
 package com.shuh.movie
 
 import android.Manifest
+import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
@@ -11,11 +12,11 @@ import java.io.File
 import java.util.*
 import android.support.v7.widget.RecyclerView
 import android.view.View
-import android.widget.SimpleAdapter
 import android.widget.TextView
 import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
+
     // /storage/emulated/0/bluetooth/
     val TAG = "MainActivity"
     private val movieFiles: ArrayList<File> = ArrayList()
@@ -26,21 +27,28 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = CommonAdapter(movieFiles, android.R.layout.simple_list_item_2, { holder, file ->
+        adapter = CommonAdapter(movieFiles, android.R.layout.simple_list_item_2) { holder, file ->
             holder.itemView.findViewById<TextView>(android.R.id.text1).text = file.name
             holder.itemView.findViewById<TextView>(android.R.id.text2).text = file.absolutePath
+        }
+        adapter.setOnItemClickListener(View.OnClickListener { view ->
+            val position = this.recyclerView.getChildAdapterPosition(view)
+            val intent = Intent(this@MainActivity, PlayerActivity::class.java)
+            intent.putExtra("PlayerActivity.filePath", movieFiles[position].absolutePath)
+            startActivity(intent)
         })
 
         recyclerView.adapter = adapter
         val file = File(Environment.getExternalStorageDirectory(), "/bluetooth/吴恩达")
         RxPermissions(this).request(Manifest.permission.READ_EXTERNAL_STORAGE)
-                .subscribe({ granted ->
+                .subscribe { granted ->
                     if (granted) {
-                        Log.d(TAG, Arrays.toString(file.list()))
+//                        Log.d(TAG, Arrays.toString(file.list()))
                         movieFiles.clear()
-                        movieFiles.addAll(file.listFiles { file -> !file.name.startsWith("._") })
+                        movieFiles.addAll(file.listFiles { f -> !f.name.startsWith("._") })
                         adapter.notifyDataSetChanged()
                     }
-                })
+                }
+
     }
 }
